@@ -58,12 +58,12 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
         create: (context) => TimeState(),
         child: MaterialApp(
-          title: 'Flutter Demo',
+          title: 'Pomotroid Flutter',
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
             useMaterial3: true,
           ),
-          home: const MyHomePage(title: 'Flutter Demo Home Page'),
+          home: const MyHomePage(title: 'Pomotroid Flutter'),
         ));
   }
 }
@@ -85,20 +85,40 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+      body: Column(
+        children: <Widget>[
+          Expanded(
+              child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                WatchWiget(),
+                const Text('Focus'),
+              ],
             ),
-            WatchWiget(),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => timeState._startTimer(),
-        child: const Icon(Icons.add),
+          )),
+          FloatingActionButton(
+            onPressed: () => timeState._startTimer(),
+            child: const Icon(Icons.start),
+          ),
+          const SizedBox(height: 60),
+          Row(
+            children: [
+              const SizedBox(width: 30),
+              FloatingActionButton(
+                onPressed: () => timeState._startTimer(),
+                child: const Icon(Icons.reset_tv),
+              ),
+              const Expanded(child: SizedBox()),
+              FloatingActionButton(
+                onPressed: () => timeState._startTimer(),
+                child: const Icon(Icons.skip_next),
+              ),
+              const SizedBox(width: 30),
+            ],
+          ),
+          const SizedBox(height: 30)
+        ],
       ),
     );
   }
