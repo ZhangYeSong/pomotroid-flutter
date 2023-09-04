@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:provider/provider.dart';
 
 void main() {
@@ -79,6 +80,10 @@ class TimeState extends ChangeNotifier {
     notifyListeners();
   }
 
+  double getProgress() {
+    return _countDownTime / totalTime;
+  }
+
   String _getPeroidText() {
     switch (cycle[cycleIndex]) {
       case Period.focus:
@@ -146,15 +151,23 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Column(
         children: <Widget>[
           Expanded(
-              child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+            child: Stack(
               children: [
-                WatchWiget(),
-                Text(timeState._getPeroidText()),
+                Center(
+                  child: WatchProgress(timeState.getProgress()),
+                ),
+                Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      WatchWiget(),
+                      Text(timeState._getPeroidText()),
+                    ],
+                  ),
+                )
               ],
             ),
-          )),
+          ),
           Visibility(
             visible: !timeState._stopwatch.isRunning,
             child: FloatingActionButton(
@@ -204,6 +217,57 @@ class WatchWiget extends StatelessWidget {
     return Text(
       formatDuration(timeState._countDownTime),
       style: Theme.of(context).textTheme.headlineMedium,
+    );
+  }
+}
+
+class WatchProgressPainter extends CustomPainter {
+  final double progress; // 进度值，范围为0到1之间
+
+  WatchProgressPainter(this.progress);
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width / 2, size.height / 2);
+    final progressAngle = 2 * math.pi * progress;
+
+    final backgroundPaint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    final foregroundPaint = Paint()
+      ..color = Colors.blue
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 12;
+
+    canvas.drawCircle(center, radius, backgroundPaint);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -math.pi / 2,
+      progressAngle,
+      false,
+      foregroundPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
+  }
+}
+
+class WatchProgress extends StatelessWidget {
+  final double progress;
+
+  WatchProgress(this.progress);
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size(200, 200),
+      painter: WatchProgressPainter(progress),
     );
   }
 }
