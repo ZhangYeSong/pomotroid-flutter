@@ -2,8 +2,30 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:provider/provider.dart';
+import 'dart:io' show Platform;
+import 'package:window_manager/window_manager.dart';
+import 'package:audioplayers/audioplayers.dart';
 
-void main() {
+void main() async {
+  if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+    WidgetsFlutterBinding.ensureInitialized();
+    // 必须加上这一行。
+    await windowManager.ensureInitialized();
+
+    WindowOptions windowOptions = const WindowOptions(
+      size: Size(360, 478),
+      center: true,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+      titleBarStyle: TitleBarStyle.hidden,
+    );
+    windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+    windowManager.setAlwaysOnTop(true);
+  }
+
   runApp(const MyApp());
 }
 
@@ -23,6 +45,7 @@ class TimeState extends ChangeNotifier {
   late Stopwatch _stopwatch;
   int totalTime = 0;
   int _countDownTime = 0;
+  bool isPlaying = false;
   final cycle = [
     Period.focus,
     Period.shortBreak,
@@ -35,15 +58,28 @@ class TimeState extends ChangeNotifier {
   ];
   int cycleIndex = 0;
 
+  static AudioPlayer audioPlayer = AudioPlayer();
+  static AudioPlayer notificationPlayer = AudioPlayer();
+
   TimeState() {
     totalTime = _getPeroidTotalTime();
     _countDownTime = totalTime;
     _stopwatch = Stopwatch();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (isPlaying) {
+        audioPlayer.play(AssetSource("audio/tick.mp3"));
+      }
       _countDownTime = totalTime - _stopwatch.elapsed.inSeconds;
       notifyListeners();
       if (_countDownTime <= 0) {
         _nextPeriod();
+        if (cycle[cycleIndex] == Period.focus) {
+          notificationPlayer.play(AssetSource("alert-work.mp3"));
+        } else if (cycle[cycleIndex] == Period.shortBreak) {
+          notificationPlayer.play(AssetSource("alert-short-break.mp3"));
+        } else if (cycle[cycleIndex] == Period.longBreak) {
+          notificationPlayer.play(AssetSource("alert-long-break.mp3"));
+        }
       }
     });
   }
@@ -56,15 +92,20 @@ class TimeState extends ChangeNotifier {
 
   void _startTimer() {
     _stopwatch.start();
+    isPlaying = true;
+    notifyListeners();
   }
 
   void _pauseTimer() {
     _stopwatch.stop();
+    isPlaying = false;
+    notifyListeners();
   }
 
   void _resetTimer() {
     _stopwatch.stop();
     _stopwatch.reset();
+    isPlaying = false;
     _countDownTime = totalTime;
     notifyListeners();
   }
@@ -168,28 +209,27 @@ class _MyHomePageState extends State<MyHomePage> {
               ],
             ),
           ),
-          Visibility(
-            visible: !timeState._stopwatch.isRunning,
-            child: FloatingActionButton(
-              onPressed: () => timeState._startTimer(),
-              child: const Icon(Icons.start),
+          FloatingActionButton(
+            shape: const CircleBorder(),
+            onPressed: () => {
+              if (timeState.isPlaying)
+                {timeState._pauseTimer()}
+              else
+                {timeState._startTimer()}
+            },
+            child: Icon(
+              timeState.isPlaying ? Icons.pause : Icons.play_arrow,
             ),
           ),
-          Visibility(
-            visible: timeState._stopwatch.isRunning,
-            child: FloatingActionButton(
-              onPressed: () => timeState._pauseTimer(),
-              child: const Icon(Icons.pause),
-            ),
-          ),
-          const SizedBox(height: 60),
+          const SizedBox(height: 10),
           Row(
             children: [
-              const SizedBox(width: 30),
+              const SizedBox(width: 10),
               Column(
                 children: [
                   Text(timeState._getPeroidInCycleText()),
                   FloatingActionButton(
+                    shape: const CircleBorder(),
                     onPressed: () => timeState._resetTimer(),
                     child: const Icon(Icons.reset_tv),
                   ),
@@ -197,13 +237,14 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               const Expanded(child: SizedBox()),
               FloatingActionButton(
+                shape: const CircleBorder(),
                 onPressed: () => timeState._nextPeriod(),
                 child: const Icon(Icons.skip_next),
               ),
-              const SizedBox(width: 30),
+              const SizedBox(width: 10),
             ],
           ),
-          const SizedBox(height: 30)
+          const SizedBox(height: 10)
         ],
       ),
     );
