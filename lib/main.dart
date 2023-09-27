@@ -7,7 +7,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 void main() async {
-  if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+  if (isDesktop()) {
     WidgetsFlutterBinding.ensureInitialized();
     // 必须加上这一行。
     await windowManager.ensureInitialized();
@@ -15,9 +15,8 @@ void main() async {
     WindowOptions windowOptions = const WindowOptions(
       size: Size(360, 478),
       center: true,
-      backgroundColor: Colors.transparent,
-      skipTaskbar: false,
-      titleBarStyle: TitleBarStyle.hidden,
+      skipTaskbar: true,
+      title: "Pomotroid Flutter",
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
@@ -27,6 +26,10 @@ void main() async {
   }
 
   runApp(const MyApp());
+}
+
+bool isDesktop() {
+  return Platform.isMacOS || Platform.isWindows || Platform.isLinux;
 }
 
 enum Period { focus, shortBreak, longBreak }
@@ -185,7 +188,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     var timeState = context.watch<TimeState>();
     return Scaffold(
-      appBar: AppBar(
+      appBar: isDesktop() ? null : AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
