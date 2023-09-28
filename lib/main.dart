@@ -5,18 +5,20 @@ import 'package:provider/provider.dart';
 import 'dart:io' show Platform;
 import 'package:window_manager/window_manager.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'model.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // 必须加上这一行。
+  await windowManager.ensureInitialized();
+  var cTheme = await getThemeByName("ayu");
   if (isDesktop()) {
-    WidgetsFlutterBinding.ensureInitialized();
-    // 必须加上这一行。
-    await windowManager.ensureInitialized();
-
     WindowOptions windowOptions = const WindowOptions(
       size: Size(360, 478),
       center: true,
       skipTaskbar: true,
       title: "Pomotroid Flutter",
+      titleBarStyle: TitleBarStyle.normal
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
@@ -49,6 +51,7 @@ class TimeState extends ChangeNotifier {
   int totalTime = 0;
   int _countDownTime = 0;
   bool isPlaying = false;
+  bool hasVolume = true;
   final cycle = [
     Period.focus,
     Period.shortBreak,
@@ -122,6 +125,15 @@ class TimeState extends ChangeNotifier {
     totalTime = _getPeroidTotalTime();
     _countDownTime = totalTime;
     notifyListeners();
+  }
+
+  void _toggleVolume() {
+    if(hasVolume) {
+      audioPlayer.setVolume(0);
+    } else {
+      audioPlayer.setVolume(1);
+    }
+    hasVolume = !hasVolume;
   }
 
   double getProgress() {
@@ -227,22 +239,20 @@ class _MyHomePageState extends State<MyHomePage> {
           const SizedBox(height: 10),
           Row(
             children: [
-              const SizedBox(width: 10),
-              Column(
-                children: [
-                  Text(timeState._getPeroidInCycleText()),
-                  FloatingActionButton(
-                    shape: const CircleBorder(),
-                    onPressed: () => timeState._resetTimer(),
-                    child: const Icon(Icons.reset_tv),
-                  ),
-                ],
+              const SizedBox(width: 20),
+              Text(timeState._getPeroidInCycleText(), style: const TextStyle(fontSize: 20)),
+              IconButton(
+                onPressed: () => timeState._resetTimer(),
+                icon: const Icon(Icons.refresh),
               ),
               const Expanded(child: SizedBox()),
-              FloatingActionButton(
-                shape: const CircleBorder(),
+              IconButton(
                 onPressed: () => timeState._nextPeriod(),
-                child: const Icon(Icons.skip_next),
+                icon: const Icon(Icons.skip_next),
+              ),
+              IconButton(
+                onPressed: () => timeState._toggleVolume(),
+                icon: Icon(timeState.hasVolume ? Icons.volume_up : Icons.volume_off),
               ),
               const SizedBox(width: 10),
             ],
